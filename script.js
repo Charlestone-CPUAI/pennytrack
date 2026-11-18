@@ -72,17 +72,48 @@ function updateDashboard() {
   updateChart();
 }
 
+
 function renderTransactions() {
   transactionList.innerHTML = "";
 
-  emptyMessage.style.display =
-    transactions.length === 0 ? "block" : "none";
+  const searchTerm = document
+    .getElementById("search-transactions")
+    .value.trim().toLowerCase();
 
-  const sorted = [...transactions].sort((a, b) =>
-    b.date.localeCompare(a.date) || b.id.localeCompare(a.id)
-  );
+  const filterType = document
+    .getElementById("filter-transactions")
+    .value;
 
-  sorted.forEach(item => {
+  emptyMessage.style.display = "none";
+
+  const sorted = [...transactions]
+    .sort((a, b) =>
+      b.date.localeCompare(a.date) ||
+      b.id.localeCompare(a.id)
+    );
+
+  const filtered = sorted.filter(item => {
+    const matchesSearch =
+      item.description.toLowerCase().includes(searchTerm) ||
+      item.category.toLowerCase().includes(searchTerm);
+
+    const matchesType =
+      filterType === "all" || item.type === filterType;
+
+    return matchesSearch && matchesType;
+  });
+
+  if (filtered.length === 0) {
+    emptyMessage.style.display = "block";
+
+    emptyMessage.textContent =
+      transactions.length === 0
+        ? "No transactions yet. Add your first transaction!"
+        : "No matching transactions found.";
+
+  }
+
+  filtered.forEach(item => {
     const row = document.createElement("tr");
 
     const description = document.createElement("td");
@@ -95,33 +126,49 @@ function renderTransactions() {
     date.textContent = item.date;
 
     const amount = document.createElement("td");
+
     amount.textContent =
       `${item.type === "income" ? "+" : "-"}${peso(item.amount)}`;
 
     amount.className =
-      item.type === "income" ? "amount-income" : "amount-expense";
+      item.type === "income"
+        ? "amount-income"
+        : "amount-expense";
 
     const action = document.createElement("td");
+
+    const buttons = document.createElement("div");
+    buttons.className = "action-buttons";
+
+    const editButton = document.createElement("button");
+
+    editButton.textContent = "Edit";
+    editButton.className = "edit-btn";
+    editButton.type = "button";
+
+    editButton.addEventListener("click", () => {
+      editTransaction(item.id);
+    });
+
     const deleteButton = document.createElement("button");
 
     deleteButton.textContent = "Delete";
     deleteButton.className = "delete-btn";
     deleteButton.type = "button";
-    deleteButton.setAttribute(
-      "aria-label",
-      `Delete ${item.description}`
-    );
 
     deleteButton.addEventListener("click", () => {
       deleteTransaction(item.id);
     });
 
-    action.appendChild(deleteButton);
+    buttons.append(editButton, deleteButton);
+    action.appendChild(buttons);
 
     row.append(description, category, date, amount, action);
+
     transactionList.appendChild(row);
   });
 }
+
 
 function addTransaction(event) {
   event.preventDefault();
@@ -375,3 +422,88 @@ updateDashboard = function () {
 };
 
 updateBudget();
+
+// SEARCH AND FILTER EVENTS
+
+document
+  .getElementById("search-transactions")
+  .addEventListener("input", renderTransactions);
+
+document
+  .getElementById("filter-transactions")
+  .addEventListener("change", renderTransactions);
+
+// EDIT TRANSACTION
+
+function editTransaction(id) {
+  const item = transactions.find(
+    transaction => transaction.id === id
+  );
+
+  if (!item) return;
+
+  const description = prompt(
+    "Edit description:",
+    item.description
+  );
+
+  if (description === null) return;
+
+  const amount = prompt(
+    "Edit amount:",
+    item.amount
+  );
+
+  if (amount === null) return;
+
+  const category = prompt(
+    "Edit category:",
+    item.category
+  );
+
+  if (category === null) return;
+
+  const type = prompt(
+    "Enter income or expense:",
+    item.type
+  );
+
+  if (type === null) return;
+
+  const date = prompt(
+    "Edit date (YYYY-MM-DD):",
+    item.date
+  );
+
+  if (date === null) return;
+
+  const cleanDescription = description.trim();
+  const cleanAmount = Number(amount);
+  const cleanType = type.trim().toLowerCase();
+  const cleanCategory = category.trim();
+
+  if (
+    !cleanDescription ||
+    !Number.isFinite(cleanAmount) ||
+    cleanAmount <= 0 ||
+    cleanAmount > 100000000 ||
+    !["income", "expense"].includes(cleanType) ||
+    !cleanCategory ||
+    !/^\d{4}-\d{2}-\d{2}$/.test(date) ||
+    Number.isNaN(Date.parse(date + "T00:00:00"))
+  ) {
+    alert("Invalid transaction details. Please try again.");
+    return;
+  }
+
+  item.description = cleanDescription;
+  item.amount = Math.round(cleanAmount * 100) / 100;
+  item.category = cleanCategory;
+  item.type = cleanType;
+  item.date = date;
+
+  saveTransactions();
+  updateDashboard();
+
+  alert("Transaction updated successfully!");
+}

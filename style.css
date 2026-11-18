@@ -465,3 +465,66 @@ td {
     gap: 16px;
   }
 }
+
+/* TRANSACTION MANAGEMENT */
+
+.transaction-tools {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.transaction-tools input,
+.transaction-tools select {
+  background: var(--background);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 12px;
+  outline: none;
+  font-family: inherit;
+  min-width: 0;
+}
+
+.transaction-tools input {
+  flex: 1;
+}
+
+.transaction-tools select {
+  width: 190px;
+}
+
+.transaction-tools input:focus,
+.transaction-tools select:focus {
+  border-color: var(--purple);
+}
+
+.action-buttons {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.edit-btn {
+  color: var(--purple);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  padding: 6px;
+}
+
+.edit-btn:hover,
+.delete-btn:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 600px) {
+  .transaction-tools {
+    flex-direction: column;
+  }
+
+  .transaction-tools select {
+    width: 100%;
+  }
+}
