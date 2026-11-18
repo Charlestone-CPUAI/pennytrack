@@ -59,6 +59,64 @@
         </article>
       </section>
 
+<section class="panel budget-panel">
+  <div class="panel-heading">
+    <h2>Monthly Budget</h2>
+    <span>◈ Budget Planner</span>
+  </div>
+
+  <div class="budget-input">
+    <label for="monthly-budget">Set your monthly budget (₱)</label>
+
+    <div class="budget-controls">
+      <input
+        type="number"
+        id="monthly-budget"
+        min="0"
+        max="100000000"
+        step="0.01"
+        placeholder="Enter your budget"
+      >
+
+      <button id="save-budget" class="primary-btn">
+        Save Budget
+      </button>
+    </div>
+  </div>
+
+  <div class="budget-details">
+    <div>
+      <p>Total Budget</p>
+      <h2 id="budget-total">₱0.00</h2>
+    </div>
+
+    <div>
+      <p>Spent This Month</p>
+      <h2 id="budget-spent" class="expense">₱0.00</h2>
+    </div>
+
+    <div>
+      <p>Remaining</p>
+      <h2 id="budget-remaining" class="income">₱0.00</h2>
+    </div>
+  </div>
+
+  <div class="budget-progress">
+    <div class="progress-header">
+      <span>Budget Usage</span>
+      <span id="budget-percentage">0%</span>
+    </div>
+
+    <div class="progress-track">
+      <div id="budget-progress-bar"></div>
+    </div>
+
+    <p id="budget-message" class="budget-message">
+      Set your budget to start tracking!
+    </p>
+  </div>
+</section>
+
       <section class="content-grid">
 
         <article class="panel">

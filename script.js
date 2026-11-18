@@ -255,3 +255,123 @@ function updateChart() {
 form.addEventListener("submit", addTransaction);
 
 updateDashboard();
+updateDashboard();
+
+
+// ===================================
+// MONTHLY BUDGET TRACKER
+// ===================================
+
+const budgetInput = document.getElementById("monthly-budget");
+const saveBudgetButton = document.getElementById("save-budget");
+
+const budgetTotal = document.getElementById("budget-total");
+const budgetSpent = document.getElementById("budget-spent");
+const budgetRemaining = document.getElementById("budget-remaining");
+
+const budgetPercentage = document.getElementById("budget-percentage");
+const budgetProgressBar = document.getElementById("budget-progress-bar");
+const budgetMessage = document.getElementById("budget-message");
+
+let monthlyBudget = 0;
+
+try {
+  const savedBudget = Number(
+    localStorage.getItem("pennytrack-budget")
+  );
+
+  if (
+    Number.isFinite(savedBudget) &&
+    savedBudget > 0 &&
+    savedBudget <= 100000000
+  ) {
+    monthlyBudget = savedBudget;
+  }
+} catch (error) {
+  console.error("Unable to load budget:", error);
+}
+
+budgetInput.value = monthlyBudget || "";
+
+saveBudgetButton.addEventListener("click", () => {
+  const value = Number(budgetInput.value);
+
+  if (
+    !Number.isFinite(value) ||
+    value <= 0 ||
+    value > 100000000
+  ) {
+    alert("Please enter a valid budget amount.");
+    return;
+  }
+
+  monthlyBudget = Math.round(value * 100) / 100;
+
+  localStorage.setItem(
+    "pennytrack-budget",
+    String(monthlyBudget)
+  );
+
+  updateBudget();
+});
+
+function updateBudget() {
+  const currentMonth = new Date().toLocaleDateString("en-CA")
+    .slice(0, 7);
+
+  const spent = transactions
+    .filter(item =>
+      item.type === "expense" &&
+      item.date.startsWith(currentMonth)
+    )
+    .reduce((total, item) => total + item.amount, 0);
+
+  const remaining = monthlyBudget - spent;
+
+  const percentage = monthlyBudget > 0
+    ? (spent / monthlyBudget) * 100
+    : 0;
+
+  budgetTotal.textContent = peso(monthlyBudget);
+  budgetSpent.textContent = peso(spent);
+  budgetRemaining.textContent = peso(remaining);
+
+  budgetPercentage.textContent =
+    `${percentage.toFixed(1)}%`;
+
+  budgetProgressBar.style.width =
+    `${Math.min(percentage, 100)}%`;
+
+  if (monthlyBudget === 0) {
+    budgetMessage.textContent =
+      "Set your budget to start tracking!";
+
+    budgetProgressBar.style.background = "#969bad";
+  } else if (percentage >= 100) {
+    budgetMessage.textContent =
+      "Warning! You've exceeded your monthly budget.";
+
+    budgetProgressBar.style.background = "#ff7185";
+  } else if (percentage >= 80) {
+    budgetMessage.textContent =
+      "Careful! You're getting close to your budget limit.";
+
+    budgetProgressBar.style.background = "#ffbd69";
+  } else {
+    budgetMessage.textContent =
+      "Great job! You're staying within your budget.";
+
+    budgetProgressBar.style.background = "#35d39a";
+  }
+}
+
+// Update budget whenever dashboard transactions change.
+
+const originalUpdateDashboard = updateDashboard;
+
+updateDashboard = function () {
+  originalUpdateDashboard();
+  updateBudget();
+};
+
+updateBudget();
