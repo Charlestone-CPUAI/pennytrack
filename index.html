@@ -9,11 +9,44 @@
   <title>PennyTrack | Expense Tracker</title>
 
   <link rel="stylesheet" href="style.css">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js" integrity="sha384-jb8JQMbMoBUzgWatfe6COACi2ljcDdZQ2OxczGA3bGNeWe+6DChMTBJemed7ZnvJ" crossorigin="anonymous"></script>
 </head>
 <body>
 
-  <div class="app">
+  <a class="skip-link" href="#dashboard">Skip to main content</a>
+
+  <section id="auth-page" class="auth-page" aria-label="Account access">
+    <div class="auth-card">
+      <p class="auth-brand">Penny<span>Track.</span></p>
+      <div id="login-panel">
+        <h1>Welcome back</h1>
+        <p>Sign in to securely manage your money.</p>
+        <form id="auth-form" class="auth-form">
+          <label for="auth-email">Email address</label>
+          <input id="auth-email" type="email" autocomplete="email" placeholder="you@example.com" required>
+          <label for="auth-password">Password</label>
+          <input id="auth-password" type="password" autocomplete="current-password" minlength="6" placeholder="Your password" required>
+          <button type="submit" class="primary-btn">Sign in</button>
+        </form>
+        <p class="auth-switch">New to PennyTrack? <button type="button" id="show-sign-up" class="link-btn">Create an account</button></p>
+      </div>
+      <div id="sign-up-panel" hidden>
+        <h1>Create your account</h1>
+        <p>Your budgets and transactions will be saved securely in the cloud.</p>
+        <form id="sign-up-form" class="auth-form">
+          <label for="sign-up-email">Email address</label>
+          <input id="sign-up-email" type="email" autocomplete="email" placeholder="you@example.com" required>
+          <label for="sign-up-password">Password</label>
+          <input id="sign-up-password" type="password" autocomplete="new-password" minlength="6" placeholder="At least 6 characters" required>
+          <button type="submit" class="primary-btn">Create account</button>
+        </form>
+        <p class="auth-switch">Already have an account? <button type="button" id="show-sign-in" class="link-btn">Sign in</button></p>
+      </div>
+      <p id="auth-status" class="auth-status" role="status" aria-live="polite">Sign in to access your cloud data.</p>
+    </div>
+  </section>
+
+  <div class="app" id="app-shell" hidden>
     <aside class="sidebar">
       <h2 class="logo">Penny<span>Track.</span></h2>
 
@@ -36,8 +69,14 @@
           <h1>Dashboard</h1>
           <p>Welcome back! Here's your financial overview.</p>
         </div>
-        <span class="currency-label">PHP ₱</span>
+        <div class="account-summary"><span class="currency-label">PHP ₱</span><span id="account-email"></span><button type="button" id="sign-out" class="secondary-btn">Sign out</button></div>
       </header>
+
+      <section class="period-controls" aria-label="Report period">
+        <label for="report-month">Viewing period</label>
+        <input type="month" id="report-month">
+        <p id="report-period-label" aria-live="polite"></p>
+      </section>
 
       <section class="summary-grid">
         <article class="summary-card balance">
@@ -165,6 +204,18 @@
               <option value="Other">Other</option>
             </select>
 
+            <label class="checkbox-label">
+              <input type="checkbox" id="is-recurring">
+              Make this a recurring transaction
+            </label>
+            <div id="recurrence-options" class="recurrence-options" hidden>
+              <label for="recurrence-frequency">Repeats</label>
+              <select id="recurrence-frequency">
+                <option value="monthly">Monthly</option>
+                <option value="weekly">Weekly</option>
+              </select>
+            </div>
+
             <label for="date">Date</label>
             <input type="date" id="date" required>
 
@@ -181,10 +232,59 @@
           </div>
           <div class="chart-container">
             <canvas id="expenseChart"></canvas>
+            <p id="expense-chart-empty" class="chart-empty" hidden>No expenses to show for this period.</p>
           </div>
           <p class="chart-note">Your spending by category</p>
         </article>
 
+        <article class="panel chart-panel">
+          <div class="panel-heading">
+            <h2>Income vs Expenses</h2>
+            <span>↗</span>
+          </div>
+          <div class="chart-container"><canvas id="trendChart"></canvas><p id="trend-chart-empty" class="chart-empty" hidden>Transaction history will appear here.</p></div>
+          <p class="chart-note">Last six months</p>
+        </article>
+
+      </section>
+
+      <section class="analytics-summary" aria-label="Analytics summary">
+        <article class="panel analytics-card"><p>Savings rate</p><h2 id="savings-rate">0%</h2></article>
+        <article class="panel analytics-card"><p>Top expense category</p><h2 id="top-category">—</h2></article>
+        <article class="panel analytics-card"><p>Expense vs. previous month</p><h2 id="expense-change">—</h2></article>
+      </section>
+
+      <section class="panel category-panel" aria-labelledby="category-management-title">
+        <div class="panel-heading"><div><h2 id="category-management-title">Categories &amp; Category Budgets</h2><p class="panel-description">Add categories and set spending limits for the selected category.</p></div><span>◇</span></div>
+        <div class="category-controls">
+          <input type="text" id="new-category" maxlength="30" placeholder="New category name">
+          <button type="button" id="add-category" class="secondary-btn">Add category</button>
+          <select id="category-budget-category" aria-label="Category for budget"></select>
+          <input type="number" id="category-budget-amount" min="0" max="100000000" step="0.01" placeholder="Category budget (₱)">
+          <button type="button" id="save-category-budget" class="secondary-btn">Save limit</button>
+        </div>
+        <div id="category-budget-list" class="category-budget-list"></div>
+      </section>
+
+      <section class="panel data-panel" aria-labelledby="data-management-title">
+        <div class="panel-heading">
+          <div>
+            <h2 id="data-management-title">Your Data</h2>
+            <p class="panel-description">Back up or restore your transactions and monthly budget.</p>
+          </div>
+          <span>⇅</span>
+        </div>
+
+        <div class="data-actions">
+          <button type="button" class="secondary-btn" id="export-json">Export backup</button>
+          <button type="button" class="secondary-btn" id="export-csv">Export CSV</button>
+          <label class="secondary-btn import-btn" for="import-file">
+            Import backup
+            <input type="file" id="import-file" accept="application/json,.json" hidden>
+          </label>
+          <button type="button" class="danger-btn" id="clear-data">Clear all data</button>
+        </div>
+        <p id="data-status" class="data-status" role="status" aria-live="polite"></p>
       </section>
 
 <div class="transaction-tools">
@@ -226,6 +326,12 @@
           </table>
         </div>
 
+        <div class="pagination" id="pagination" aria-label="Transaction pages">
+          <button type="button" class="secondary-btn" id="previous-page">Previous</button>
+          <span id="page-status" aria-live="polite"></span>
+          <button type="button" class="secondary-btn" id="next-page">Next</button>
+        </div>
+
         <p id="empty-message" class="empty-message">
           No transactions yet. Add your first transaction!
         </p>
@@ -234,6 +340,30 @@
     </main>
   </div>
 
-  <script src="script.js"></script>
+  <dialog id="edit-transaction-modal" class="transaction-modal" aria-labelledby="edit-transaction-title">
+    <form id="edit-transaction-form" method="dialog">
+      <div class="panel-heading"><h2 id="edit-transaction-title">Edit Transaction</h2><button type="button" id="close-edit-modal" class="icon-btn" aria-label="Close edit form">×</button></div>
+      <input type="hidden" id="edit-id">
+      <label for="edit-description">Description</label><input type="text" id="edit-description" maxlength="60" required>
+      <label for="edit-amount">Amount (₱)</label><input type="number" id="edit-amount" min="0.01" max="100000000" step="0.01" required>
+      <label for="edit-type">Transaction type</label><select id="edit-type"><option value="income">Income</option><option value="expense">Expense</option></select>
+      <label for="edit-category">Category</label><select id="edit-category"></select>
+      <label for="edit-date">Date</label><input type="date" id="edit-date" required>
+      <label class="checkbox-label"><input type="checkbox" id="edit-is-recurring"> Make this recurring</label>
+      <div id="edit-recurrence-options" class="recurrence-options"><label for="edit-recurrence-frequency">Repeats</label><select id="edit-recurrence-frequency"><option value="monthly">Monthly</option><option value="weekly">Weekly</option></select></div>
+      <div class="modal-actions"><button type="button" id="cancel-edit" class="secondary-btn">Cancel</button><button type="submit" class="primary-btn">Save changes</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="confirmation-modal" class="transaction-modal" aria-labelledby="confirmation-title">
+    <div>
+      <h2 id="confirmation-title">Please confirm</h2>
+      <p id="confirmation-message" class="modal-message"></p>
+      <div class="modal-actions"><button type="button" id="cancel-confirmation" class="secondary-btn">Cancel</button><button type="button" id="accept-confirmation" class="danger-btn">Continue</button></div>
+    </div>
+  </dialog>
+  <p id="toast" class="toast" role="status" aria-live="polite"></p>
+
+  <script type="module" src="script.js"></script>
 </body>
 </html>
